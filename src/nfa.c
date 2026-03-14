@@ -69,9 +69,6 @@ static bool nfa_traverse_helper(Nfa *nfa, State *source, const char *str) {
     if(!source)
         return false;
 
-    if(source->is_accepting)
-        return true;
-
     if(ch == '\0')
         return source->is_accepting;
 
@@ -219,20 +216,9 @@ Nfa *nfa_concat(Nfa *a, Nfa *b) {
     return nfa;
 }
 
-Nfa *nfa_complement(Nfa *a) {
-    Nfa *nfa = allocate_nfa();
-    nfa->q = allocate_state_list(a->size);
-    
-    for(size_t i = 0; i < a->size; ++i) {
-        nfa->q[i] = a->q[i];
-        nfa->q[i]->is_accepting ^= 1;
-    }
-
-    return nfa;
-}
-
 bool nfa_traverse(Nfa *nfa, const char *str) {
     if(!nfa)
         return false;
+
     return nfa_traverse_helper(nfa, nfa->q[0], str);
 }

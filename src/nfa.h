@@ -35,7 +35,6 @@ void nfa_free(Nfa *a);
 /* Note: Those functions make a and b unusable */
 Nfa *nfa_union(Nfa *a, Nfa *b);
 Nfa *nfa_concat(Nfa *a, Nfa *b);
-Nfa *nfa_complement(Nfa *a);
 
 bool nfa_traverse(Nfa *nfa, const char *str);
 
