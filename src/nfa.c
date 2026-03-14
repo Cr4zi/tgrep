@@ -66,20 +66,14 @@ static Nfa *allocate_nfa() {
 
 static bool nfa_traverse_helper(Nfa *nfa, State *source, const char *str) {
     unsigned char ch = (unsigned char)*str;
-    if(!source) {
-        printf("source is null\n");
+    if(!source)
         return false;
-    }
 
-    if(source->is_accepting) {
-        printf("accepted\n");
+    if(source->is_accepting)
         return true;
-    }
 
-    if(ch == '\0') {
-        printf("finished reading a word\n");
+    if(ch == '\0')
         return source->is_accepting;
-    }
 
     bool is_accepted = false;
     State **transitions_ch = source->delta->transition[ch];
@@ -101,10 +95,8 @@ static bool nfa_traverse_helper(Nfa *nfa, State *source, const char *str) {
 }
 
 static void move_states_to_nfa(Nfa *target, Nfa *from, size_t target_start_index) {
-    for(size_t i = 0; i < from->size; ++i) {
+    for(size_t i = 0; i < from->size; ++i)
         target->q[i + target_start_index] = from->q[i];
-        from->q[i] = NULL;
-    }
 }
 
 size_t get_transition_list_size(State **transitions) {
@@ -161,7 +153,7 @@ Nfa *nfa_union(Nfa *a, Nfa *b) {
     Delta *delta_q0 = allocate_delta();
     State *q0 = allocate_state(delta_q0, false);
 
-    state_p *epsilon_transition = delta_q0->transition[EPSILON_TRANSITION_INDEX];
+    State **epsilon_transition = delta_q0->transition[EPSILON_TRANSITION_INDEX];
     epsilon_transition = allocate_state_list(3);
 
     epsilon_transition[0] = a->q[0];
@@ -191,45 +183,52 @@ Nfa *nfa_union(Nfa *a, Nfa *b) {
 }
 
 Nfa *nfa_concat(Nfa *a, Nfa *b) {
+    Nfa *nfa = allocate_nfa();
+    nfa->size = a->size + b->size;
+
+    nfa->q = allocate_state_list(nfa->size);
+    move_states_to_nfa(nfa, a, 0);
+    move_states_to_nfa(nfa, b, a->size);
+
     for(size_t i = 0; i < a->size; ++i) {
         if(!a->q[i]->is_accepting)
             continue;
-        
+
         a->q[i]->is_accepting = false;
 
-        size_t len = get_transition_list_size(a->q[i]->delta->transition[EPSILON_TRANSITION_INDEX]);
-        state_p *epsilon_transition = a->q[i]->delta->transition[EPSILON_TRANSITION_INDEX];
-        epsilon_transition = (state_p *)realloc(epsilon_transition, len + 1);
+        State **epsilon_transition = a->q[i]->delta->transition[EPSILON_TRANSITION_INDEX];
+        size_t len = get_transition_list_size(epsilon_transition);
+        epsilon_transition = (State **)realloc((void *)epsilon_transition, (len + 2) * sizeof(State *));
         if(!epsilon_transition) {
-            perror("Failed reallocating for epsilon transition\n");
+            perror("Failed reallocating for epsilon transition in concat\n");
             exit(1);
         }
 
-        /* The element at len - 1 is NULL thus, we change it to q0 of b */
-        epsilon_transition[len - 1] = b->q[0];
-        epsilon_transition[len] = NULL;
-        
+        epsilon_transition[len] = b->q[0];
+        epsilon_transition[len + 1] = NULL;
+
         a->q[i]->delta->transition[EPSILON_TRANSITION_INDEX] = epsilon_transition;
     }
+    
+    free(a->q);
+    free(a);
 
-    State **q = (State **)realloc(a->q, a->size + b->size);
-    if(!q) {
-        perror("Failed reallocating for extending a state list\n");
-        exit(1);
-    }
-
-    move_states_to_nfa(a, b, a->size + 1);
     free(b->q);
     free(b);
-
-    return a;
+    
+    return nfa;
 }
 
 Nfa *nfa_complement(Nfa *a) {
-    for(size_t i = 0; i < a->size; ++i)
-        a->q[i]->is_accepting ^= 1;
+    Nfa *nfa = allocate_nfa();
+    nfa->q = allocate_state_list(a->size);
+    
+    for(size_t i = 0; i < a->size; ++i) {
+        nfa->q[i] = a->q[i];
+        nfa->q[i]->is_accepting ^= 1;
+    }
 
-    return a;
+    return nfa;
 }
 
 bool nfa_traverse(Nfa *nfa, const char *str) {
