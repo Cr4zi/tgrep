@@ -26,8 +26,8 @@ For the sake of simplicity there is an order of operations. The order is:
 
 ### Escaped characters
 Those are special characters that in order to write them inside an expression without using their functionality above you have to escape them:
-- \\*
-- \\^
+- \*
+- \^
 - \(
 - \)
 
