@@ -21,8 +21,7 @@ For example you could do: *^i
 For the sake of simplicity there is an order of operations. The order is:
 1. ()
 2. ^
-3. \*
-4. \+
+3. \+
 
 ### Escaped characters
 Those are special characters that in order to write them inside an expression without using their functionality above you have to escape them:
