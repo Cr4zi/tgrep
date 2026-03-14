@@ -3,7 +3,7 @@ A tiny POC implementation of grep.
 
 ## Syntax
 Base expressions are any chars in the ASCII table (there are some escaped characters). \
-To show the syntax we'll denote one expression as E, and second expression as F. \
+To show the syntax we'll denote one expression as E, and second expression as F.
 
 ```
 EF - concatenating E and F.
@@ -18,18 +18,18 @@ For example you could do: *^i
 ```
 
 ### Order of operations
-For the sake of simplicity there is an order of operations. The order is: \
+For the sake of simplicity there is an order of operations. The order is:
 1. ()
 2. ^
-3. *
-4. +
+3. \*
+4. \+
 
 ### Escaped characters
 Those are special characters that in order to write them inside an expression without using their functionality above you have to escape them: \
 - \\*
 - \\^
-- \\(
-- \\)
+- \(
+- \)
 
 
 ## Build from source:
