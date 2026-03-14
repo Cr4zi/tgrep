@@ -28,11 +28,12 @@ For the sake of simplicity there is an order of operations. The order is:
 Those are special characters that in order to write them inside an expression without using their functionality above you have to escape them:
 - \*
 - \^
+- \+
 - \(
 - \)
 
 
-## Build from source:
+## Build from source
 ``` sh
 $ git clone https://github.com/Cr4zi/tgrep.git
 $ cd tgrep
