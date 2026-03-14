@@ -64,36 +64,59 @@ static Nfa *allocate_nfa() {
     return nfa;
 }
 
-static void state_self_loop(State *q) {
-    Delta *delta = q->delta;
-    for(int i = 0 ; i < CHARSET_LENGTH; ++i) {
-        delta->transition[i] = (state_p *)malloc(2 * sizeof(state_p));
-        if(!delta->transition[i]) {
-            perror("Failed allocating array for transition\n");
-            exit(1);
-        }
-
-        delta->transition[i][0] = q;
-        delta->transition[i][1] = NULL;
+static bool nfa_traverse_helper(Nfa *nfa, State *source, const char *str) {
+    unsigned char ch = (unsigned char)*str;
+    if(!source) {
+        printf("source is null\n");
+        return false;
     }
+
+    if(source->is_accepting) {
+        printf("accepted\n");
+        return true;
+    }
+
+    if(ch == '\0') {
+        printf("finished reading a word\n");
+        return source->is_accepting;
+    }
+
+    bool is_accepted = false;
+    State **transitions_ch = source->delta->transition[ch];
+    if(transitions_ch) {
+        size_t len = get_transition_list_size(transitions_ch);
+
+        for(size_t i = 0; i < len; ++i)
+            is_accepted |= nfa_traverse_helper(nfa, transitions_ch[i], str + 1);
+    }
+
+    State **transitions_eps = source->delta->transition[EPSILON_TRANSITION_INDEX];
+    if(transitions_eps) {
+        size_t len = get_transition_list_size(transitions_eps);
+        for(size_t i = 0; i < len; ++i)
+            is_accepted |= nfa_traverse_helper(nfa, transitions_eps[i], str);
+    }
+
+    return is_accepted;
 }
 
 static void move_states_to_nfa(Nfa *target, Nfa *from, size_t target_start_index) {
-    for(size_t i = 0; i < from->size; ++i)
+    for(size_t i = 0; i < from->size; ++i) {
         target->q[i + target_start_index] = from->q[i];
+        from->q[i] = NULL;
+    }
 }
 
-static size_t get_transition_list_size(state_p *transitions) {
+size_t get_transition_list_size(State **transitions) {
     size_t len = 0;
 
     /* might be unnecessary */
     if(!transitions)
         return len;
 
-    for(state_p transition = transitions[len]; transition != NULL;)
-        transition = transitions[++len];
+    while(transitions[len++] != NULL);
 
-    return len;
+    return len - 1;
 }
 
 Nfa *nfa_create(unsigned char a) {
@@ -103,12 +126,15 @@ Nfa *nfa_create(unsigned char a) {
     Delta *delta_q0 = allocate_delta();
     State *q0 = allocate_state(delta_q0, false);
 
-    state_self_loop(q0);
-
     Delta *delta_q1 = allocate_delta();
     State *q1 = allocate_state(delta_q1, true);
 
-    delta_q0->transition[a][0] = q1;
+    state_p *transition = delta_q0->transition[a];
+    transition = allocate_state_list(2);
+    transition[0] = q1;
+    transition[1] = NULL;
+
+    delta_q0->transition[a] = transition;
 
     Nfa *nfa = allocate_nfa();
     
@@ -127,6 +153,7 @@ void nfa_free(Nfa *a) {
     for(size_t i = 0; i < a->size; ++i)
         free_state(a->q[i]);
 
+    free(a->q);
     free(a);
 }
 
@@ -134,16 +161,11 @@ Nfa *nfa_union(Nfa *a, Nfa *b) {
     Delta *delta_q0 = allocate_delta();
     State *q0 = allocate_state(delta_q0, false);
 
-    state_self_loop(q0);
     state_p *epsilon_transition = delta_q0->transition[EPSILON_TRANSITION_INDEX];
-    epsilon_transition = (state_p *)realloc(epsilon_transition, 3);
-    if(!epsilon_transition) {
-        perror("Failed reallocating for epsilon transition\n");
-        exit(1);
-    }
+    epsilon_transition = allocate_state_list(3);
 
     epsilon_transition[0] = a->q[0];
-    epsilon_transition[1] = b->q[1];
+    epsilon_transition[1] = b->q[0];
     epsilon_transition[2] = NULL;
 
     delta_q0->transition[EPSILON_TRANSITION_INDEX] = epsilon_transition;
@@ -158,6 +180,12 @@ Nfa *nfa_union(Nfa *a, Nfa *b) {
 
     indx += a->size;
     move_states_to_nfa(nfa, b, indx);
+
+    free(a->q);
+    free(a);
+
+    free(b->q);
+    free(b);
     
     return nfa;
 }
@@ -189,8 +217,23 @@ Nfa *nfa_concat(Nfa *a, Nfa *b) {
         perror("Failed reallocating for extending a state list\n");
         exit(1);
     }
-    
+
     move_states_to_nfa(a, b, a->size + 1);
+    free(b->q);
+    free(b);
 
     return a;
+}
+
+Nfa *nfa_complement(Nfa *a) {
+    for(size_t i = 0; i < a->size; ++i)
+        a->q[i]->is_accepting ^= 1;
+
+    return a;
+}
+
+bool nfa_traverse(Nfa *nfa, const char *str) {
+    if(!nfa)
+        return false;
+    return nfa_traverse_helper(nfa, nfa->q[0], str);
 }

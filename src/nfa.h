@@ -25,6 +25,8 @@ typedef struct nfa_s {
     State **q; /* array of states */
 } Nfa;
 
+size_t get_transition_list_size(State **transitions);
+
 /* The function returns a Non-deterministic Finite Automata that only accepts the word 'a'*/
 Nfa *nfa_create(unsigned char a);
 
@@ -33,5 +35,8 @@ void nfa_free(Nfa *a);
 /* Note: Those functions make a and b unusable */
 Nfa *nfa_union(Nfa *a, Nfa *b);
 Nfa *nfa_concat(Nfa *a, Nfa *b);
+Nfa *nfa_complement(Nfa *a);
+
+bool nfa_traverse(Nfa *nfa, const char *str);
 
 #endif
