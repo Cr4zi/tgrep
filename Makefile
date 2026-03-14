@@ -3,7 +3,7 @@ NAME		= tgrep
 CC 			= clang
 BUILD_DIR 	= build
 SRC_DIR		= src
-CFLAGS 		= -std=c23 -Wall -Wextra -I$(SRC_DIR)
+CFLAGS 		= -std=c23 -Werror -Wall -Wextra -I$(SRC_DIR)
 
 SRCS		= $(wildcard $(SRC_DIR)/*.c)
 OBJS		= $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRCS))
