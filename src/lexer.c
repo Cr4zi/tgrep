@@ -51,6 +51,10 @@ static ssize_t parse_num(const char **str) {
         consume(str);
     }
 
+    if(**str != ')') {
+        perror("expected )\n");
+        exit(1);
+    }
 
     return res;
 }
